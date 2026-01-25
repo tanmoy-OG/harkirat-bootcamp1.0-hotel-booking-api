@@ -18,7 +18,11 @@ const userSchema = new mongoose.Schema(
         role: {
             type: string,
             required: true,
+            default: 'customer',
             enum: ['customer', 'owner'],
+        },
+        phone: {
+            type: number,
         },
         createdAt: {
             type: date,
