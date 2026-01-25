@@ -80,7 +80,7 @@ export const login = async (req, res) => {
         const user = await User.findOne({ email });
         const isPasswordCorrect = await bcrypt.compare(password, user?.password || "");
         if (!email || !isPasswordCorrect) {
-            return res.status(400).json({
+            return res.status(401).json({
                 success: false,
                 data: null,
                 error: "INVALID_CREDENTIALS"
