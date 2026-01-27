@@ -26,7 +26,7 @@ export const createHotel = async (req, res) => {
 
         const user = await User.findOne({ userId });
         if (user.role == 'customer') {
-            return res.status(401).json({
+            return res.status(403).json({
                 success: false,
                 data: null,
                 error: "FORBIDDEN"
@@ -51,6 +51,8 @@ export const createHotel = async (req, res) => {
         });
 
         if (newHotel) {
+            await newHotel.save();
+
             res.status(201).json({
                 success: true,
                 data: {
@@ -99,7 +101,7 @@ export const createRoom = async (req, res) => {
 
         const user = await User.findOne({ userId });
         if (user.role == 'customer' || hotel.ownerId != user._id) {
-            return res.status(401).json({
+            return res.status(403).json({
                 success: false,
                 data: null,
                 error: "FORBIDDEN"
@@ -125,7 +127,7 @@ export const createRoom = async (req, res) => {
 
         const hotel = await Hotel.findOne({ hotelId })
         if (!hotel) {
-            return res.status(400).json({
+            return res.status(404).json({
                 success: false,
                 data: null,
                 error: "HOTEL_NOT_FOUND"
@@ -141,6 +143,8 @@ export const createRoom = async (req, res) => {
         });
 
         if (newRoom) {
+            await newRoom.save();
+
             res.status(201).json({
                 success: true,
                 data: {
@@ -168,7 +172,6 @@ export const getHotel = async (req, res) => {
     try {
         const { city, country, minPrice, maxPrice, minRating } = req.query;
         const pipeline = [];
-        const filter = {};
         const token = req.headers['authorization']?.split(' ')[1];
         const userId = verifyToken(token);
 
@@ -258,7 +261,7 @@ export const getRoom = async (req, res) => {
 
         const result = await Hotel.aggregate(pipeline);
         if (!result || result.length === 0) {
-            return res.status(400).json({
+            return res.status(404).json({
                 success: false,
                 data: null,
                 error: "HOTEL_NOT_FOUND"

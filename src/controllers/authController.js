@@ -42,6 +42,8 @@ export const signup = async (req, res) => {
         });
 
         if (newUser) {
+            await newUser.save();
+
             res.status(201).json({
                 success: true,
                 data: {
