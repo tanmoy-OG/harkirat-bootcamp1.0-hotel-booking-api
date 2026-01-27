@@ -30,7 +30,6 @@ export const signup = async (req, res) => {
             });
         }
 
-        // password hashing
         const salt = await bcrypt.genSalt(10);
         const hashedPass = await bcrypt.hash(pass, salt);
 

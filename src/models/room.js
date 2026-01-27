@@ -5,18 +5,16 @@ const roomSchema = new mongoose.Schema(
         hotelId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Hotel",
-            unique: true,
         },
         roomNo: {
             type: string,
             required: true,
-            unique: true,
         },
         roomType: {
             type: string,
             required: true,
         },
-        rateType: {
+        rate: {
             type: number,
             required: true,
         },
