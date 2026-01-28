@@ -1,25 +1,28 @@
+import { loginSchema, signupSchema } from "../validation/schemas.js";
 import bcrypt from "bcryptjs";
 import User from "../models/userModel.js";
 import genToken from "../utils/genToken.js";
 
 export const signup = async (req, res) => {
     try {
-        const {
-            name,
-            email,
-            password,
-            role,
-            phone,
-        } = req.body;
-        role = role.toLowerCase();
+        const body = signupSchema(req.body);
 
-        if (!name || !email || !password || (role != '' && (role != 'customer' || role != 'owner'))) {
+        if (!body.success) {
             return res.status(400).json({
                 success: false,
                 data: null,
                 error: "INVALID_REQUEST"
             });
         }
+
+        const {
+            name,
+            email,
+            password,
+            role,
+            phone,
+        } = body.data;
+        role = role.toLowerCase();
 
         const user = await User.findOne({ email });
         if (user) {
@@ -31,7 +34,7 @@ export const signup = async (req, res) => {
         }
 
         const salt = await bcrypt.genSalt(10);
-        const hashedPass = await bcrypt.hash(pass, salt);
+        const hashedPass = await bcrypt.hash(password, salt);
 
         const newUser = new User({
             name,
@@ -68,15 +71,17 @@ export const signup = async (req, res) => {
 
 export const login = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const body = loginSchema(req.body);
 
-        if (!email || !password) {
+        if (!body.success) {
             return res.status(400).json({
                 success: false,
                 data: null,
                 error: "INVALID_REQUEST"
             });
         }
+
+        const { email, password } = body;
 
         const user = await User.findOne({ email });
         const isPasswordCorrect = await bcrypt.compare(password, user?.password || "");

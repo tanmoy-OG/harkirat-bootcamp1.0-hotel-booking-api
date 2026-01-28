@@ -1,3 +1,4 @@
+import { createBookingSchema } from "../validation/schemas.js";
 import Hotel from "../models/hotel";
 import Room from "../models/room";
 import Booking from "../models/booking";
@@ -5,12 +6,22 @@ import verifyToken from "../utils/verifyToken.js";
 
 export const createBooking = async (req, res) => {
     try {
+        const body = createBookingSchema(req.body)
+
+        if (!body.success) {
+            return res.status(400).json({
+                success: false,
+                data: null,
+                error: "INVALID_REQUEST"
+            });
+        }
+
         const {
             roomId,
             checkInDate,
             checkOutDate,
             guests,
-        } = req.body;
+        } = body;
         const token = req.headers['authorization']?.split(' ')[1];
         const userId = verifyToken(token);
 
@@ -19,14 +30,6 @@ export const createBooking = async (req, res) => {
                 success: false,
                 data: null,
                 error: "UNAUTHORIZED"
-            });
-        }
-
-        if (!roomId || !checkInDate || !checkOutDate || !guests) {
-            return res.status(400).json({
-                success: false,
-                data: null,
-                error: "INVALID_REQUEST"
             });
         }
 
@@ -42,8 +45,9 @@ export const createBooking = async (req, res) => {
         const checkIn = new Date(checkInDate);
         const checkOut = new Date(checkOutDate);
         const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-        if (checkIn >= checkOut || checkIn < today) {
+        if (checkOut <= checkIn || checkIn <= today) {
             return res.status(400).json({
                 success: false,
                 data: null,
@@ -194,7 +198,6 @@ export const getBooking = async (req, res) => {
 export const cancelBooking = async (req, res) => {
     try {
         const { bookingId } = req.params;
-        const filter = [];
         const token = req.headers['authorization']?.split(' ')[1];
         const userId = verifyToken(token);
 

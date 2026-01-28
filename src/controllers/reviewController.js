@@ -1,10 +1,21 @@
+import { giveReviewSchema } from "../validation/schemas.js";
 import Booking from "../models/booking";
 import Review from "../models/review"
 import verifyToken from "../utils/verifyToken.js";
 
 export const giveReview = async (req, res) => {
     try {
-        const { bookingId, rating, comment } = req.body;
+        const body = giveReviewSchema(req.body);
+
+        if (!body.success) {
+            return res.status(400).json({
+                success: false,
+                data: null,
+                error: "INVALID_REQUEST"
+            });
+        }
+
+        const { bookingId, rating, comment } = body;
         const token = req.headers['authorization']?.split(' ')[1];
         const userId = verifyToken(token);
 
@@ -13,14 +24,6 @@ export const giveReview = async (req, res) => {
                 success: false,
                 data: null,
                 error: "UNAUTHORIZED"
-            });
-        }
-
-        if (!bookingId || !rating || !comment) {
-            return res.status(400).json({
-                success: false,
-                data: null,
-                error: "INVALID_REQUEST"
             });
         }
 
@@ -53,7 +56,7 @@ export const giveReview = async (req, res) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const checkOut = new Date(booking.checkOutDate);
-        const canReview = checkOut.getTime() < today.getTime() && booking.status === 'confirmed';
+        const canReview = checkOut < today && booking.status === 'confirmed';
         if (!canReview) {
             return res.status(400).json({
                 success: false,

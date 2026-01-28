@@ -1,3 +1,4 @@
+import { createHotelSchema } from "../validation/schemas.js";
 import Hotel from "../models/hotel";
 import Room from "../models/room";
 import User from "../models/user"
@@ -6,13 +7,23 @@ import mongoose from "mongoose";
 
 export const createHotel = async (req, res) => {
     try {
+        const body = createHotelSchema(req.body);
+
+        if (!body.success) {
+            return res.status(400).json({
+                success: false,
+                data: null,
+                error: "INVALID_REQUEST"
+            });
+        }
+
         const {
             name,
             description,
             city,
             country,
             amenities,
-        } = req.body;
+        } = body;
         const token = req.headers['authorization']?.split(' ')[1];
         const userId = verifyToken(token);
 
@@ -30,14 +41,6 @@ export const createHotel = async (req, res) => {
                 success: false,
                 data: null,
                 error: "FORBIDDEN"
-            });
-        }
-
-        if (!name || !city || !country) {
-            return res.status(400).json({
-                success: false,
-                data: null,
-                error: "INVALID_REQUEST"
             });
         }
 
@@ -81,12 +84,22 @@ export const createHotel = async (req, res) => {
 
 export const createRoom = async (req, res) => {
     try {
+        const body = createHotelSchema(req.body);
+
+        if (!body.success) {
+            return res.status(400).json({
+                success: false,
+                data: null,
+                error: "INVALID_REQUEST"
+            });
+        }
+
         const {
             roomNumber,
             roomType,
             pricePerNight,
             maxOccupancy,
-        } = req.body;
+        } = body;
         const hotelId = req.params.hotelId;
         const token = req.headers['authorization']?.split(' ')[1];
         const userId = verifyToken(token);
@@ -114,14 +127,6 @@ export const createRoom = async (req, res) => {
                 success: false,
                 data: null,
                 error: "ROOM_ALREADY_EXISTS"
-            });
-        }
-
-        if (!roomNumber || !roomType || !pricePerNight || !maxOccupancy) {
-            return res.status(400).json({
-                success: false,
-                data: null,
-                error: "INVALID_REQUEST"
             });
         }
 

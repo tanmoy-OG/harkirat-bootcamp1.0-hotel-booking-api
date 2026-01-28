@@ -22,7 +22,7 @@ const userSchema = new mongoose.Schema(
             enum: ['customer', 'owner'],
         },
         phone: {
-            type: number,
+            type: string,
         },
         createdAt: {
             type: date,
