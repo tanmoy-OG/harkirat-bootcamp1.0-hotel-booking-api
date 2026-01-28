@@ -1,9 +1,7 @@
 import Hotel from "../models/hotel";
 import Room from "../models/room";
 import Booking from "../models/booking";
-import User from "../models/user"
 import verifyToken from "../utils/verifyToken.js";
-import mongoose from "mongoose";
 
 export const createBooking = async (req, res) => {
     try {
