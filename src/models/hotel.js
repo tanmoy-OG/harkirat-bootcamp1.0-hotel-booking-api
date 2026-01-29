@@ -7,34 +7,34 @@ const hotelSchema = new mongoose.Schema(
             ref: "User",
         },
         name: {
-            type: string,
+            type: String,
             required: true,
         },
         desc: {
-            type: string,
+            type: String,
         },
         city: {
-            type: string,
+            type: String,
             required: true,
         },
         country: {
-            type: string,
+            type: String,
             required: true,
         },
         amenities: {
-            type: [string],
+            type: [String],
             default: [],
         },
         rating: {
-            type: number,
+            type: Number,
             default: 0.0,
         },
         totalReviews: {
-            type: number,
+            type: Number,
             default: 0,
         },
         createdAt: {
-            type: date,
+            type: Date,
             default: Date.now,
         }
     },

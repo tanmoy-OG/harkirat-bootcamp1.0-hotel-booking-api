@@ -4,13 +4,13 @@ export const signupSchema = z.object({
     name: z.string(),
     email: z.email(),
     password: z.string(),
-    role: z.string(),
+    role: z.enum(["owner", "customer"]).optional(),
     phone: z.string().optional(),
 })
 
 export const loginSchema = z.object({
-    name: z.string(),
     email: z.email(),
+    password: z.string(),
 })
 
 export const createBookingSchema = z.object({
@@ -25,7 +25,7 @@ export const createHotelSchema = z.object({
     description: z.string().optional(),
     city: z.string(),
     country: z.string(),
-    amenities: z.array(string()).optional(),
+    amenities: z.array(z.string()).optional(),
 })
 
 export const createRoomSchema = z.object({
@@ -37,6 +37,6 @@ export const createRoomSchema = z.object({
 
 export const giveReviewSchema = z.object({
     bookingId: z.string(),
-    rating: z.number(),
+    rating: z.number().min(1).max(5),
     comment: z.string().optional(),
 })

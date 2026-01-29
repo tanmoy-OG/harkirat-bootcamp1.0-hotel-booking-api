@@ -1,11 +1,11 @@
 import { loginSchema, signupSchema } from "../validation/schemas.js";
 import bcrypt from "bcryptjs";
-import User from "../models/userModel.js";
+import User from "../models/user.js";
 import genToken from "../utils/genToken.js";
 
 export const signup = async (req, res) => {
     try {
-        const body = signupSchema(req.body);
+        const body = signupSchema.safeParse(req.body);
 
         if (!body.success) {
             return res.status(400).json({
@@ -22,7 +22,6 @@ export const signup = async (req, res) => {
             role,
             phone,
         } = body.data;
-        role = role.toLowerCase();
 
         const user = await User.findOne({ email });
         if (user) {
@@ -71,8 +70,7 @@ export const signup = async (req, res) => {
 
 export const login = async (req, res) => {
     try {
-        const body = loginSchema(req.body);
-
+        const body = loginSchema.safeParse(req.body);
         if (!body.success) {
             return res.status(400).json({
                 success: false,
@@ -81,11 +79,10 @@ export const login = async (req, res) => {
             });
         }
 
-        const { email, password } = body;
-
-        const user = await User.findOne({ email });
+        const { email, password } = body.data;
+        const user = await User.findOne({ email: email });
         const isPasswordCorrect = await bcrypt.compare(password, user?.password || "");
-        if (!email || !isPasswordCorrect) {
+        if (!user || !isPasswordCorrect) {
             return res.status(401).json({
                 success: false,
                 data: null,

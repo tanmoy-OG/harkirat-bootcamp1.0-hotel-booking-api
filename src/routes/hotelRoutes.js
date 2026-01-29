@@ -6,6 +6,6 @@ const router = express.Router();
 router.post("/", createHotel);
 router.post("/:hotelId/rooms", createRoom);
 router.get("/", getHotel);
-router.get("/:hotelId/rooms", getRoom);
+router.get("/:hotelId", getRoom);
 
 export default router;

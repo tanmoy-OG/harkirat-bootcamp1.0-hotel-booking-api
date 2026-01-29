@@ -1,11 +1,12 @@
 import { giveReviewSchema } from "../validation/schemas.js";
-import Booking from "../models/booking";
-import Review from "../models/review"
+import Booking from "../models/booking.js";
+import Review from "../models/review.js"
 import verifyToken from "../utils/verifyToken.js";
+import mongoose from "mongoose";
 
 export const giveReview = async (req, res) => {
     try {
-        const body = giveReviewSchema(req.body);
+        const body = giveReviewSchema.safeParse(req.body);
 
         if (!body.success) {
             return res.status(400).json({
@@ -15,7 +16,7 @@ export const giveReview = async (req, res) => {
             });
         }
 
-        const { bookingId, rating, comment } = body;
+        const { bookingId, rating, comment } = body.data;
         const token = req.headers['authorization']?.split(' ')[1];
         const userId = verifyToken(token);
 
@@ -27,7 +28,15 @@ export const giveReview = async (req, res) => {
             });
         }
 
-        const booking = await Booking.findAny({ bookingId });
+        if (!mongoose.Types.ObjectId.isValid(bookingId)) {
+            return res.status(404).json({
+                success: false,
+                data: null,
+                error: "BOOKING_NOT_FOUND"
+            });
+        }
+
+        const booking = await Booking.findById(bookingId);
         if (!booking) {
             return res.status(404).json({
                 success: false,
@@ -44,7 +53,7 @@ export const giveReview = async (req, res) => {
             });
         }
 
-        const review = await Review.findAny({ bookingId });
+        const review = await Review.findOne({ bookingId });
         if (review) {
             return res.status(400).json({
                 success: false,
@@ -55,7 +64,7 @@ export const giveReview = async (req, res) => {
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const checkOut = new Date(booking.checkOutDate);
+        const checkOut = new Date(booking.checkOut);
         const canReview = checkOut < today && booking.status === 'confirmed';
         if (!canReview) {
             return res.status(400).json({
@@ -91,7 +100,7 @@ export const giveReview = async (req, res) => {
             });
         }
     } catch (error) {
-        console.log("Error in signup controller", error.message);
+        console.log("Error in giveReview controller", error.message);
         res.status(500).json({
             success: false,
             data: null,

@@ -15,32 +15,32 @@ const bookingSchema = new mongoose.Schema(
             ref: "Hotel",
         },
         checkIn: {
-            type: date,
+            type: Date,
             required: true,
         },
         checkOut: {
-            type: date,
+            type: Date,
             required: true,
         },
         guests: {
-            type: number,
+            type: Number,
             required: true,
         },
         totalPrice: {
-            type: number,
+            type: Number,
             required: true,
         },
         status: {
-            type: string,
+            type: String,
             default: 'confirmed',
             enum: ['confirmed', 'cancelled'],
         },
         bookingDate: {
-            type: date,
+            type: Date,
             default: Date.now,
         },
         cancelledAt: {
-            type: date,
+            type: Date,
         }
     },
 );

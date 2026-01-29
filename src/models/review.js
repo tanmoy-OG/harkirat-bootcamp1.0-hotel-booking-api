@@ -23,10 +23,10 @@ const reviewSchema = new mongoose.Schema(
             required: true,
         },
         comment: {
-            type: string,
+            type: String,
         },
         createdAt: {
-            type: date,
+            type: Date,
             default: Date.now,
         }
     },

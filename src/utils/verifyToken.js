@@ -1,13 +1,12 @@
 import jwt from "jsonwebtoken";
 
 const verifyToken = (token) => {
-    jwt.verify(token, process.env.JWT_SECRET, (error, user) => {
-        if (error) {
-            return false;
-        } else {
-            return user.id;
-        }
-    });
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        return decoded.user.id;
+    } catch (error) {
+        return null;
+    }
 };
 
 export default verifyToken;

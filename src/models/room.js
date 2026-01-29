@@ -7,19 +7,19 @@ const roomSchema = new mongoose.Schema(
             ref: "Hotel",
         },
         roomNo: {
-            type: string,
+            type: String,
             required: true,
         },
         roomType: {
-            type: string,
+            type: String,
             required: true,
         },
         rate: {
-            type: number,
+            type: Number,
             required: true,
         },
         maxOccupancy: {
-            type: number,
+            type: Number,
             required: true,
         },
         createdAt: {

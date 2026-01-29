@@ -1,12 +1,13 @@
 import { createBookingSchema } from "../validation/schemas.js";
-import Hotel from "../models/hotel";
-import Room from "../models/room";
-import Booking from "../models/booking";
+import Hotel from "../models/hotel.js";
+import Room from "../models/room.js";
+import Booking from "../models/booking.js";
 import verifyToken from "../utils/verifyToken.js";
+import mongoose from "mongoose";
 
 export const createBooking = async (req, res) => {
     try {
-        const body = createBookingSchema(req.body)
+        const body = createBookingSchema.safeParse(req.body);
 
         if (!body.success) {
             return res.status(400).json({
@@ -21,7 +22,7 @@ export const createBooking = async (req, res) => {
             checkInDate,
             checkOutDate,
             guests,
-        } = body;
+        } = body.data;
         const token = req.headers['authorization']?.split(' ')[1];
         const userId = verifyToken(token);
 
@@ -33,7 +34,15 @@ export const createBooking = async (req, res) => {
             });
         }
 
-        const room = await Room.findOne({ roomId });
+        if (!mongoose.Types.ObjectId.isValid(roomId)) {
+            return res.status(404).json({
+                success: false,
+                data: null,
+                error: "ROOM_NOT_FOUND"
+            });
+        }
+
+        const room = await Room.findById(roomId);
         if (!room) {
             return res.status(404).json({
                 success: false,
@@ -47,7 +56,15 @@ export const createBooking = async (req, res) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        if (checkOut <= checkIn || checkIn <= today) {
+        if (checkOut <= checkIn) {
+            return res.status(400).json({
+                success: false,
+                data: null,
+                error: "INVALID_REQUEST"
+            });
+        }
+
+        if (checkIn <= today) {
             return res.status(400).json({
                 success: false,
                 data: null,
@@ -63,7 +80,7 @@ export const createBooking = async (req, res) => {
             });
         }
 
-        const hotel = await Hotel.findOne(room.hotelId);
+        const hotel = await Hotel.findById(room.hotelId);
         if (!hotel) {
             return res.status(404).json({
                 success: false,
@@ -87,7 +104,7 @@ export const createBooking = async (req, res) => {
             checkOut: { $gt: checkIn },
         })
         if (overlap) {
-            res.status(400).json({
+            return res.status(400).json({
                 success: false,
                 data: null,
                 error: "ROOM_NOT_AVAILABLE",
@@ -122,14 +139,14 @@ export const createBooking = async (req, res) => {
                     checkOutDate: booking.checkOut,
                     guests: booking.guests,
                     totalPrice: booking.totalPrice,
-                    status: booking.totalRevistatusews,
+                    status: booking.status,
                     bookingDate: booking.bookingDate,
                 },
                 error: null,
             })
         }
     } catch (error) {
-        console.log("Error in signup controller", error.message);
+        console.log("Error in createBooking controller", error.message);
         res.status(500).json({
             success: false,
             data: null,
@@ -141,7 +158,7 @@ export const createBooking = async (req, res) => {
 export const getBooking = async (req, res) => {
     try {
         const { status } = req.query;
-        const filter = [];
+        const filter = {};
         const token = req.headers['authorization']?.split(' ')[1];
         const userId = verifyToken(token);
 
@@ -175,18 +192,18 @@ export const getBooking = async (req, res) => {
                 hotelId: booking.hotelId._id,
                 hotelName: booking.hotelId.name,
                 roomNumber: booking.roomId.roomNo,
-                roomType: booking.roomType,
+                roomType: booking.roomId.roomType,
                 checkInDate: booking.checkIn,
                 checkOutDate: booking.checkOut,
                 guests: booking.guests,
                 totalPrice: booking.totalPrice,
-                status: booking.totalRevistatusews,
+                status: booking.status,
                 bookingDate: booking.bookingDate,
             })),
             error: null,
         })
     } catch (error) {
-        console.log("Error in signup controller", error.message);
+        console.log("Error in getBooking controller", error.message);
         res.status(500).json({
             success: false,
             data: null,
@@ -209,7 +226,15 @@ export const cancelBooking = async (req, res) => {
             });
         }
 
-        const booking = Booking.findOne({ bookingId });
+        if (!mongoose.Types.ObjectId.isValid(bookingId)) {
+            return res.status(404).json({
+                success: false,
+                data: null,
+                error: "BOOKING_NOT_FOUND"
+            });
+        }
+
+        const booking = await Booking.findById(bookingId);
         if (!booking) {
             return res.status(404).json({
                 success: false,
@@ -218,7 +243,7 @@ export const cancelBooking = async (req, res) => {
             });
         }
 
-        if (booking.userId.toString() !== userId) {
+        if (booking.userId.toString() != userId) {
             return res.status(403).json({
                 success: false,
                 data: null,
@@ -260,7 +285,7 @@ export const cancelBooking = async (req, res) => {
             error: null,
         });
     } catch (error) {
-        console.log("Error in signup controller", error.message);
+        console.log("Error in cancelBooking controller", error.message);
         res.status(500).json({
             success: false,
             data: null,

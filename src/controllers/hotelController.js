@@ -1,13 +1,13 @@
-import { createHotelSchema } from "../validation/schemas.js";
-import Hotel from "../models/hotel";
-import Room from "../models/room";
-import User from "../models/user"
+import { createHotelSchema, createRoomSchema } from "../validation/schemas.js";
+import Hotel from "../models/hotel.js";
+import Room from "../models/room.js";
+import User from "../models/user.js"
 import verifyToken from "../utils/verifyToken.js";
 import mongoose from "mongoose";
 
 export const createHotel = async (req, res) => {
     try {
-        const body = createHotelSchema(req.body);
+        const body = createHotelSchema.safeParse(req.body);
 
         if (!body.success) {
             return res.status(400).json({
@@ -23,7 +23,7 @@ export const createHotel = async (req, res) => {
             city,
             country,
             amenities,
-        } = body;
+        } = body.data;
         const token = req.headers['authorization']?.split(' ')[1];
         const userId = verifyToken(token);
 
@@ -35,8 +35,8 @@ export const createHotel = async (req, res) => {
             });
         }
 
-        const user = await User.findOne({ userId });
-        if (user.role == 'customer') {
+        const user = await User.findById(userId);
+        if (user.role === 'customer') {
             return res.status(403).json({
                 success: false,
                 data: null,
@@ -65,7 +65,7 @@ export const createHotel = async (req, res) => {
                     description: newHotel.desc,
                     city: newHotel.city,
                     country: newHotel.country,
-                    amenities: newHotel.aminities,
+                    amenities: newHotel.amenities,
                     rating: newHotel.rating,
                     totalReviews: newHotel.totalReviews
                 },
@@ -73,7 +73,7 @@ export const createHotel = async (req, res) => {
             })
         }
     } catch (error) {
-        console.log("Error in signup controller", error.message);
+        console.log("Error in createHotel controller", error.message);
         res.status(500).json({
             success: false,
             data: null,
@@ -84,7 +84,7 @@ export const createHotel = async (req, res) => {
 
 export const createRoom = async (req, res) => {
     try {
-        const body = createHotelSchema(req.body);
+        const body = createRoomSchema.safeParse(req.body);
 
         if (!body.success) {
             return res.status(400).json({
@@ -99,7 +99,7 @@ export const createRoom = async (req, res) => {
             roomType,
             pricePerNight,
             maxOccupancy,
-        } = body;
+        } = body.data;
         const hotelId = req.params.hotelId;
         const token = req.headers['authorization']?.split(' ')[1];
         const userId = verifyToken(token);
@@ -112,8 +112,25 @@ export const createRoom = async (req, res) => {
             });
         }
 
-        const user = await User.findOne({ userId });
-        if (user.role == 'customer' || hotel.ownerId != user._id) {
+        if (!mongoose.Types.ObjectId.isValid(hotelId)) {
+            return res.status(404).json({
+                success: false,
+                data: null,
+                error: "HOTEL_NOT_FOUND"
+            });
+        }
+
+        const hotel = await Hotel.findById(hotelId);
+        if (!hotel) {
+            return res.status(404).json({
+                success: false,
+                data: null,
+                error: "HOTEL_NOT_FOUND"
+            });
+        }
+
+        const user = await User.findById(userId);
+        if (user.role === 'customer' || !hotel.ownerId.equals(user._id)) {
             return res.status(403).json({
                 success: false,
                 data: null,
@@ -121,21 +138,12 @@ export const createRoom = async (req, res) => {
             });
         }
 
-        const room = await Room.find({ hotelId })
-        if (room.findOne(roomNumber)) {
+        const room = await Room.findOne({ hotelId, roomNo: roomNumber })
+        if (room) {
             return res.status(400).json({
                 success: false,
                 data: null,
                 error: "ROOM_ALREADY_EXISTS"
-            });
-        }
-
-        const hotel = await Hotel.findOne({ hotelId })
-        if (!hotel) {
-            return res.status(404).json({
-                success: false,
-                data: null,
-                error: "HOTEL_NOT_FOUND"
             });
         }
 
@@ -155,16 +163,16 @@ export const createRoom = async (req, res) => {
                 data: {
                     id: newRoom._id,
                     hotelId: newRoom.hotelId,
-                    roomNumber: newHotel.roomNo,
-                    roomType: newHotel.roomType,
-                    pricePerNight: newHotel.rate,
-                    maxOccupancy: newHotel.maxOccupancy,
+                    roomNumber: newRoom.roomNo,
+                    roomType: newRoom.roomType,
+                    pricePerNight: newRoom.rate,
+                    maxOccupancy: newRoom.maxOccupancy,
                 },
                 error: null,
             })
         }
     } catch (error) {
-        console.log("Error in signup controller", error.message);
+        console.log("Error in createRoom controller", error.message);
         res.status(500).json({
             success: false,
             data: null,
@@ -206,10 +214,10 @@ export const getHotel = async (req, res) => {
         pipeline.push({ $match: { 'rooms.0': { $exists: true } } });
         pipeline.push({ $addFields: { minRate: { $min: '$rooms.rate' } } });
         if (minPrice || maxPrice) {
-            priceFilter = {};
+            const priceFilter = {};
             if (minPrice) priceFilter.$gte = Number(minPrice);
-            if (maxPrice) priceFilter$lte = Number(maxPrice);
-            pipeline.push({ $match: { minRate: { priceFilter } } });
+            if (maxPrice) priceFilter.$lte = Number(maxPrice);
+            pipeline.push({ $match: { minRate: priceFilter } });
         };
 
         const hotels = await Hotel.aggregate(pipeline);
@@ -229,7 +237,7 @@ export const getHotel = async (req, res) => {
             error: null,
         })
     } catch (error) {
-        console.log("Error in signup controller", error.message);
+        console.log("Error in getHotel controller", error.message);
         res.status(500).json({
             success: false,
             data: null,
@@ -252,6 +260,14 @@ export const getRoom = async (req, res) => {
             });
         }
 
+        if (!mongoose.Types.ObjectId.isValid(hotelId)) {
+            return res.status(404).json({
+                success: false,
+                data: null,
+                error: "HOTEL_NOT_FOUND"
+            });
+        }
+
         const pipeline = [
             { $match: { _id: new mongoose.Types.ObjectId(hotelId) } },
             {
@@ -261,7 +277,6 @@ export const getRoom = async (req, res) => {
                     foreignField: 'hotelId',
                     as: 'rooms',
                 }
-
             }]
 
         const result = await Hotel.aggregate(pipeline);
@@ -286,12 +301,20 @@ export const getRoom = async (req, res) => {
                 amenities: hotel.amenities,
                 rating: hotel.rating,
                 totalReviews: hotel.totalReviews,
-                rooms: hotel.rooms,
+                rooms: hotel.rooms.map(room => ({
+                    ...room.toObject?.() ?? room,
+                    id: room._id,
+                    _id: undefined,
+                    roomNumber: room.roomNo,
+                    roomNo: undefined,
+                    pricePerNight: room.rate,
+                    rate: undefined,
+                })),
             },
             error: null,
         })
     } catch (error) {
-        console.log("Error in signup controller", error.message);
+        console.log("Error in getRoom controller", error.message);
         res.status(500).json({
             success: false,
             data: null,
